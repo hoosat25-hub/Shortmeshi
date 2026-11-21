@@ -411,18 +411,19 @@
     'asset_chair', 'speaker', 'coin', 'forcefield', 'curve_bezier', 'curve_circle',
     'curve_path', 'curve_nurbs', 'empty_axes', 'empty_arrows', 'empty_cube',
     'empty_sphere', 'empty_circle', 'bone'];
+  // Track by id, not by object reference: studio-primitives.patchObject clones
+  // objects on every write, so a flag stored on the object can be lost and
+  // re-trigger the upgrade forever (a hot loop that made the app hang).
+  var detailedIds = new Set();
   function upgradeDetail(o) {
-    if (!o || !o.__pxDetailed && DETAILED.indexOf(o.type) >= 0) {
-      try {
-        o.__pxDetailed = true;
-        P.upgradeGeometry(o.id, o.type);
-      } catch (e) {}
-    }
+    if (!o || o.__pxDetailed || detailedIds.has(o.id) || DETAILED.indexOf(o.type) < 0) return;
+    detailedIds.add(o.id);              // mark BEFORE the store write
+    try { P.upgradeGeometry(o.id, o.type); } catch (e) {}
   }
   function observeDetail() {
     ss.subscribe(function (state) {
       (state.objects || []).forEach(function (o) {
-        if (!o.__pxDetailed && DETAILED.indexOf(o.type) >= 0) {
+        if (!o.__pxDetailed && !detailedIds.has(o.id) && DETAILED.indexOf(o.type) >= 0) {
           setTimeout(function () { upgradeDetail(o); }, 0);
         }
       });
@@ -481,7 +482,7 @@
       textDialog: textDialog, upgradeAll: function () {
         get(ss).objects.forEach(upgradeDetail);
       },
-      version: 'add-features-1'
+      version: 'add-features-2'
     };
     console.log('[add-features] ready — crossover, import, camera, text, bones');
   }

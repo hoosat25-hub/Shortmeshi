@@ -666,6 +666,7 @@
     patchObject(id, function (o) {
       o.geometry = mesh;
       o.geometryVersion = (o.geometryVersion || 1) + 1;
+      o.__pxDetailed = true;   // prevents the Add-features module upgrading twice
     });
     return true;
   }
@@ -911,7 +912,7 @@
         customMesh: customMesh
       },
       selfTest: selfTest,
-      version: 'primitives-real-2'
+      version: 'primitives-real-3'
     };
     console.log('[primitives] ready — ' + TYPES.length + ' types, window.__primitives available');
   }

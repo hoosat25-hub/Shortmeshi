@@ -141,11 +141,15 @@
         if (!seen[key]) { seen[key] = 1; edges.push([a, b]); }
       }
     }
+    // GLRenderer reads group.start/count as VERTEX offsets into the triangle
+    // stream. A count of 0 draws nothing, so compute the real triangle count.
+    var triVerts = 0;
+    for (i = 0; i < faces.length; i++) triVerts += 3 * Math.max(0, faces[i].length - 2);
     return {
       vertices: vertices, faces: faces, edges: edges, radius: radius,
       smooth: !!smooth, slots: [slot()],
       faceSlot: faces.map(function () { return 0; }),
-      groups: [{ start: 0, count: 0, materialIndex: 0 }]
+      groups: triVerts ? [{ start: 0, count: triVerts, materialIndex: 0 }] : []
     };
   }
   function mergeMeshes(list) {
@@ -382,18 +386,238 @@
                      [5, 2, 1], [5, 3, 2], [5, 4, 3], [5, 1, 4]], false);
   }
 
-  // Returns a custom mesh for types the bundle stubs out, else null.
+  /* ------------------------------------------- detailed assembly geometry */
+  function compose(parts, slotColors, slotPerPart, smooth) {
+    var v = [], f = [], faceSlot = [], off = 0, pi, j;
+    for (pi = 0; pi < parts.length; pi++) {
+      var m = parts[pi];
+      if (!m || !m.vertices || !m.faces) continue;
+      for (j = 0; j < m.vertices.length; j++) v.push([].concat(m.vertices[j]));
+      for (j = 0; j < m.faces.length; j++) {
+        f.push(m.faces[j].map(function (x) { return x + off; }));
+        faceSlot.push(slotPerPart[pi] || 0);
+      }
+      off += m.vertices.length;
+    }
+    var out = makeMesh(v, f, smooth);
+    out.slots = slotColors.map(function (c) { var s = slot(); s.color = c; return s; });
+    out.faceSlot = faceSlot;
+    var groups = [], tri = 0, cur = null;
+    for (j = 0; j < f.length; j++) {
+      var n = 3 * Math.max(0, f[j].length - 2), sl = faceSlot[j] || 0;
+      if (cur && cur.materialIndex === sl) cur.count += n;
+      else { if (cur) groups.push(cur); cur = { start: tri, count: n, materialIndex: sl }; }
+      tri += n;
+    }
+    if (cur) groups.push(cur);
+    out.groups = groups;
+    return out;
+  }
+  function mapMesh(m, fn) { return makeMesh(m.vertices.map(fn), m.faces, m.smooth); }
+  function translateMesh(m, dx, dy, dz) {
+    return mapMesh(m, function (v) { return [v[0] + dx, v[1] + dy, v[2] + dz]; });
+  }
+  function swapAxes(m, a, b) {
+    return mapMesh(m, function (v) {
+      var o = v.slice(), t = o[a]; o[a] = o[b]; o[b] = t; return o;
+    });
+  }
+  function ringAt(major, minor, seg, sides, y) {
+    return translateMesh(torus(major, minor, seg, sides), 0, y, 0);
+  }
+  function bezierDetailed() {
+    return compose([
+      makeMesh([], [], true), // placeholder removed below
+      sphere(.05, 8, 6, -.8, -.4, 0), sphere(.05, 8, 6, -.3, .6, .4),
+      sphere(.05, 8, 6, .3, -.6, -.4), sphere(.05, 8, 6, .8, .4, 0)
+    ], ['#cfd6e0', '#3dd9a8'], [0, 1, 1, 1, 1], true);
+  }
+  function circleDetailed() {
+    return compose([
+      torus(.5, .04, 32, 12), torus(.3, .015, 24, 4),
+      box(.62, .012, .012), box(.012, .012, .62)
+    ], ['#3dd9a8', '#7d8794'], [0, 1, 1, 1], true);
+  }
+  function pathDetailed() {
+    var a = cylinder(.05, .6, 10);
+    var b = translateMesh(swapAxes(cylinder(.05, .6, 10), 1, 0), 0, .5, 0);
+    var c = translateMesh(swapAxes(cylinder(.05, .6, 10), 1, 2), .3, .5, 0);
+    return compose([
+      translateMesh(a, -.3, .2, 0), sphere(.06, 10, 6, -.3, .5, 0),
+      b, sphere(.06, 10, 6, .3, .5, 0), c,
+      translateMesh(swapAxes(cone(.07, .14, 10), 1, 2), .3, .5, .3)
+    ], ['#cfd6e0', '#3dd9a8'], [0, 1, 0, 1, 0, 1], true);
+  }
+  function suzanneDetailed() {
+    return compose([
+      sphere(.42, 16, 10, 0, .12, 0),
+      sphere(.24, 12, 8, 0, -.05, .34),
+      sphere(.10, 8, 6, 0, .02, .50),
+      sphere(.13, 10, 6, -.18, .22, .34), sphere(.13, 10, 6, .18, .22, .34),
+      sphere(.07, 8, 6, -.18, .22, .42), sphere(.07, 8, 6, .18, .22, .42),
+      sphere(.18, 10, 6, -.48, .08, -.02), sphere(.18, 10, 6, .48, .08, -.02),
+      box(.22, .05, .08, -.18, .34, .36), box(.22, .05, .08, .18, .34, .36)
+    ], ['#9b7b5e', '#c2a280', '#20262d', '#8d6e53'],
+       [0, 1, 3, 2, 2, 1, 1, 3, 3, 0, 0], true);
+  }
+  function treeDetailed() {
+    var parts = [cylinder(.11, .85, 10, 0, -.08, 0),
+      cone(.55, .50, 12, 0, .30, 0), cone(.44, .45, 12, 0, .55, 0),
+      cone(.30, .40, 10, 0, .78, 0)];
+    var slots = [0, 1, 1, 1];
+    [[-.34, .36, .12], [.34, .36, .12], [-.34, .36, -.12], [.34, .36, -.12], [0, .52, .32]]
+      .forEach(function (p) { parts.push(sphere(.18, 10, 6, p[0], p[1], p[2])); slots.push(1); });
+    [[-.09, -.46, 0], [.09, -.46, 0], [0, -.46, .09]].forEach(function (p) {
+      parts.push(box(.16, .10, .16, p[0], p[1], p[2])); slots.push(0);
+    });
+    return compose(parts, ['#7a5a3a', '#3f9b57'], slots, true);
+  }
+  function carDetailed() {
+    var parts = [
+      box(.90, .26, 1.80, 0, .05, 0), box(.86, .10, .50, 0, .22, .62),
+      box(.78, .34, .90, 0, .38, -.12), box(.72, .02, .50, 0, .40, .35),
+      box(.92, .08, .08, 0, 0, .92), box(.92, .08, .08, 0, 0, -.92),
+      box(.14, .10, .04, -.30, .16, .91), box(.14, .10, .04, .30, .16, .91),
+      box(.14, .10, .04, -.30, .16, -.91), box(.14, .10, .04, .30, .16, -.91),
+      box(.40, .10, .03, 0, .12, .93)
+    ];
+    var slots = [0, 0, 1, 1, 0, 0, 4, 4, 3, 3, 2];
+    [[-.46, .58], [.46, .58], [-.46, -.58], [.46, -.58]].forEach(function (p) {
+      parts.push(translateMesh(swapAxes(cylinder(.18, .12, 12), 1, 0), p[0], -.08, p[1]));
+      slots.push(2);
+      parts.push(translateMesh(swapAxes(cylinder(.08, .14, 8), 1, 0), p[0], -.08, p[1]));
+      slots.push(3);
+    });
+    return compose(parts, ['#3dd9a8', '#26323d', '#1b1d22', '#aeb8c4', '#ffe9a8'], slots, true);
+  }
+  function characterDetailed() {
+    var parts = [
+      sphere(.16, 12, 8, 0, .62, 0), sphere(.17, 10, 6, 0, .68, -.02),
+      sphere(.03, 8, 4, -.06, .64, .14), sphere(.03, 8, 4, .06, .64, .14),
+      box(.34, .42, .22, 0, .22, 0), box(.20, .14, .03, 0, .30, .12)
+    ];
+    var slots = [0, 1, 2, 2, 3, 4];
+    [-1, 1].forEach(function (s) {
+      parts.push(cylinder(.06, .32, 8, s * .24, .22, 0)); slots.push(3);
+      parts.push(cylinder(.05, .30, 8, s * .24, -.06, 0)); slots.push(0);
+      parts.push(sphere(.07, 8, 6, s * .24, -.24, 0)); slots.push(0);
+      parts.push(box(.30 * .5, .16, .22, s * .10, -.04, 0)); slots.push(4);
+      parts.push(cylinder(.08, .36, 8, s * .10, -.26, 0)); slots.push(4);
+      parts.push(cylinder(.07, .34, 8, s * .10, -.58, 0)); slots.push(4);
+      parts.push(box(.16, .10, .30, s * .10, -.78, .08)); slots.push(2);
+    });
+    return compose(parts, ['#e8c4a0', '#33281f', '#1b2027', '#3f7fd1', '#2a3038'], slots, true);
+  }
+  function chairDetailed() {
+    var parts = [box(.56, .08, .56, 0, .45, 0), box(.50, .06, .50, 0, .51, 0),
+      box(.56, .50, .07, 0, .78, -.25), box(.50, .42, .05, 0, .78, -.20)];
+    var slots = [0, 1, 0, 1];
+    [-1, 1].forEach(function (x) {
+      [-1, 1].forEach(function (z) {
+        parts.push(box(.06, .45, .06, x * .23, .22, z * .23)); slots.push(0);
+      });
+      parts.push(box(.06, .05, .40, x * .29, .68, 0)); slots.push(0);
+      [-1, 1].forEach(function (z) {
+        parts.push(box(.04, .20, .04, x * .29, .56, z * .15)); slots.push(0);
+      });
+    });
+    parts.push(box(.50, .05, .05, 0, .18, .23));
+    parts.push(box(.50, .05, .05, 0, .18, -.23));
+    slots.push(0, 0);
+    return compose(parts, ['#4a515b', '#3dd9a8'], slots, true);
+  }
+  function speakerDetailed() {
+    var parts = [box(.60, .90, .40), box(.54, .84, .02, 0, 0, .21)];
+    var slots = [0, 0];
+    parts.push(translateMesh(swapAxes(cone(.18, .12, 16), 1, 2), 0, -.15, .28)); slots.push(1);
+    parts.push(translateMesh(swapAxes(torus(.18, .03, 16, 6), 1, 2), 0, -.15, .28)); slots.push(2);
+    parts.push(translateMesh(swapAxes(cone(.07, .06, 12), 1, 2), 0, .25, .24)); slots.push(1);
+    parts.push(translateMesh(swapAxes(torus(.07, .015, 12, 6), 1, 2), 0, .25, .24)); slots.push(2);
+    parts.push(translateMesh(swapAxes(cylinder(.05, .03, 10), 1, 2), 0, -.32, .22)); slots.push(2);
+    return compose(parts, ['#20242b', '#5b6570', '#c8d2dc'], slots, true);
+  }
+  function coinDetailed() {
+    var parts = [cylinder(.50, .10, 24), ringAt(.47, .025, 24, 6, .05),
+      ringAt(.47, .025, 24, 6, -.05), cylinder(.38, .11, 20),
+      translateMesh(sphere(.12, 10, 6), 0, 0, .058)];
+    var slots = [0, 1, 1, 0, 2];
+    for (var i = 0; i < 24; i++) {
+      var a = i * Math.PI / 12;
+      parts.push(box(.02, .10, .02, Math.cos(a) * .50, 0, Math.sin(a) * .50));
+      slots.push(1);
+    }
+    return compose(parts, ['#e8c45a', '#fff1a8', '#8a6b21'], slots, true);
+  }
+  function boneDetailed(length) {
+    length = num(length, .45, .1, 1.5);
+    var s = length / .45, parts = [cylinder(.055 * s, .42 * s, 10, 0, .225 * s, 0)];
+    var slots = [0];
+    [[-.07, .05, -.07], [.07, .05, -.07], [-.07, .05, .07], [.07, .05, .07],
+     [-.07, .41, -.07], [.07, .41, -.07], [-.07, .41, .07], [.07, .41, .07]].forEach(function (p) {
+      parts.push(sphere(.085 * s, 10, 6, p[0] * s, p[1] * s, p[2] * s)); slots.push(1);
+    });
+    parts.push(ringAt(.070 * s, .015 * s, 10, 6, .06 * s));
+    parts.push(ringAt(.070 * s, .015 * s, 10, 6, .40 * s));
+    slots.push(2, 2);
+    return compose(parts, ['#e9e4d4', '#f6f2e6', '#c9c2ad'], slots, true);
+  }
+  function forcefieldDetailed() {
+    var parts = [ringAt(.50, .012, 24, 4, 0), ringAt(.45, .012, 24, 4, .15),
+      ringAt(.35, .012, 24, 4, .30), ringAt(.20, .012, 24, 4, .42),
+      swapAxes(torus(.48, .012, 24, 4), 1, 0), swapAxes(torus(.48, .012, 24, 4), 1, 2),
+      ringAt(.50, .03, 24, 6, 0), sphere(.10, 10, 6)];
+    var slots = [0, 0, 0, 0, 0, 0, 1, 2];
+    return compose(parts, ['#57d8c4', '#8fd8c0', '#eafff8'], slots, true);
+  }
+  function wireCube(size) {
+    var parts = [], h = size / 2;
+    for (var i = -1; i <= 1; i += 2) for (var j = -1; j <= 1; j += 2) {
+      parts.push(box(.04, .04, size, i * h, j * h, 0));
+      parts.push(box(.04, size, .04, i * h, 0, j * h));
+      parts.push(box(size, .04, .04, 0, i * h, j * h));
+    }
+    return compose(parts, ['#8fd8c0'], parts.map(function () { return 0; }), false);
+  }
+  function wireSphere() {
+    return compose([
+      torus(.50, .012, 24, 4), swapAxes(torus(.50, .012, 24, 4), 1, 0),
+      swapAxes(torus(.50, .012, 24, 4), 1, 2)
+    ], ['#8fd8c0'], [0, 0, 0], true);
+  }
+  function crossDetailed() {
+    return compose([
+      torus(.50, .012, 32, 4), box(.60, .012, .012), box(.012, .012, .60),
+      sphere(.03, 8, 4)
+    ], ['#8fd8c0', '#cfd6e0'], [0, 1, 1, 1], true);
+  }
+
+  // Returns a detailed custom mesh for a type, else null.
   function customMesh(type, p) {
     switch (type) {
       case 'text_3d': return textMesh(p.text, p.depth);
       case 'lattice': return latticeMesh(p.subdivisions, p.size);
       case 'metaball': return metaballMesh(p.radius, p.blobs);
+      case 'empty_axes': return arrowsMesh();
       case 'empty_arrows': return arrowsMesh();
-      case 'empty_sphere': return sphere(.5, 24, 12);
+      case 'empty_cube': return wireCube(1);
+      case 'empty_sphere': return wireSphere();
+      case 'empty_circle': return crossDetailed();
+      case 'curve_bezier': return bezierDetailed();
+      case 'curve_circle': return circleDetailed();
+      case 'curve_path': return pathDetailed();
       case 'curve_nurbs': return nurbsMesh(p.tension, p.segments);
-      case 'bone': return boneMesh(p.length);
+      case 'bone': return boneDetailed(p.length);
       case 'light_area': return box(p.sizeX || 1, .02, p.sizeY || 1);
-      case 'camera_ortho': return mergeMeshes([box(.35, .25, .3), cone(.12, .3, 12, 0, 0, -.3)]);
+      case 'camera_ortho': return compose([box(.35, .25, .3), cone(.12, .3, 12, 0, 0, -.3)],
+        ['#3dd9a8', '#cfd6e0'], [0, 1], true);
+      case 'asset_suzanne': return suzanneDetailed();
+      case 'asset_tree': return treeDetailed();
+      case 'asset_car': return carDetailed();
+      case 'asset_character': return characterDetailed();
+      case 'asset_chair': return chairDetailed();
+      case 'speaker': return speakerDetailed();
+      case 'coin': return coinDetailed();
+      case 'forcefield': return forcefieldDetailed();
       default: return null;
     }
   }
@@ -475,6 +699,12 @@
     if (!T) return null;
     if (!CAT[type]) { toast('Unknown primitive: ' + type); return null; }
     if (isImport(type)) {
+      // The Add-features module owns real image / 3D-model import. Fall back to
+      // the bundle's generic picker when that module is not present.
+      if (typeof window.__addFeaturesImport === 'function') {
+        window.__addFeaturesImport(type);
+        return null;
+      }
       var input = document.getElementById('tl-universal-file') ||
                   document.getElementById('look-tex-file-input');
       if (input) input.click();
@@ -667,8 +897,21 @@
       setParam: setParam,
       add: add,
       remove: function (id) { ss.removeObject(id); },
+      // Rebuild an existing object's mesh to the detailed version (used by
+      // Add-tab extras such as the 3-bone chain).
+      upgradeGeometry: function (id, type, p) {
+        var merged = Object.assign(defaults(type), paramsFor(type), p || {});
+        return applyGeometry(id, type, merged);
+      },
+      // Low-level helpers for the Add-features module (file import, etc.).
+      geometry: {
+        makeMesh: makeMesh, compose: compose, mergeMeshes: mergeMeshes,
+        box: box, sphere: sphere, cylinder: cylinder, cone: cone,
+        torus: torus, translateMesh: translateMesh, swapAxes: swapAxes,
+        customMesh: customMesh
+      },
       selfTest: selfTest,
-      version: 'primitives-real-1'
+      version: 'primitives-real-2'
     };
     console.log('[primitives] ready — ' + TYPES.length + ' types, window.__primitives available');
   }

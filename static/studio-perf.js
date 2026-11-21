@@ -121,22 +121,21 @@
   syncVisibility();
   document.addEventListener('visibilitychange', syncVisibility);
   // Any real tap on a paused tab immediately wakes it.
+  // Never wake the bundle on every tap — that caused resize/recalc thrash.
   document.addEventListener('pointerdown', function () {
     if (paused) { claim(true); resume(); }
   }, true);
 
-  // Heartbeat: visible tab keeps leadership; hidden tab can take over if the
-  // previous leader died, but only after it becomes visible again.
   setInterval(function () {
     if (!isVisible()) { pause(); return; }
     var cur = readLeader();
     if (!leader || !cur || cur.id !== myId) {
       claim(true);
       resume();
-    } else {
+    } else if (Date.now() - cur.ts > 1500) {
       writeLeader(cur.gen || 1);
     }
-  }, 700);
+  }, 2000);
 
   /* Low-end specifics: 1x DPR + no overlay clutter. */
   if (lite) {
@@ -168,7 +167,7 @@
       return { leader: leader, paused: paused, lowEnd: lowEnd, lite: lite,
                minFrame: minFrame, leaderInfo: readLeader() };
     },
-    version: 'perf-2'
+    version: 'perf-3'
   };
   console.log('[perf] ready —', lite ? 'lite mode, 30fps cap' : 'full mode',
               leader ? 'leader' : 'follower (paused)');

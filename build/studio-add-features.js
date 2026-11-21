@@ -420,13 +420,21 @@
     detailedIds.add(o.id);              // mark BEFORE the store write
     try { P.upgradeGeometry(o.id, o.type); } catch (e) {}
   }
+  // One-shot: upgrade detailed geometry for existing objects, then unsubscribe
+  // so the store is not scanned on every frame / every state change.
   function observeDetail() {
-    ss.subscribe(function (state) {
+    var tries = 0;
+    var un = ss.subscribe(function (state) {
+      var pending = 0;
       (state.objects || []).forEach(function (o) {
         if (!o.__pxDetailed && !detailedIds.has(o.id) && DETAILED.indexOf(o.type) >= 0) {
+          pending++;
           setTimeout(function () { upgradeDetail(o); }, 0);
         }
       });
+      if (pending === 0) tries++;
+      else tries = 0;
+      if (tries >= 2) un();   // no more un-upgraded objects for 2 passes -> stop
     });
   }
 
@@ -482,7 +490,7 @@
       textDialog: textDialog, upgradeAll: function () {
         get(ss).objects.forEach(upgradeDetail);
       },
-      version: 'add-features-2'
+      version: 'add-features-3'
     };
     console.log('[add-features] ready — crossover, import, camera, text, bones');
   }

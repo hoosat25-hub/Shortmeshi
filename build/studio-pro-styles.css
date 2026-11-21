@@ -13,9 +13,10 @@
 #rail{position:absolute;left:4px;top:102px;z-index:20;display:flex;flex-direction:column;align-items:center;gap:2px;padding:3px 2px;width:26px;border-radius:9px;background:rgba(14,16,22,0.88);border:1px solid var(--ln)}
 #rail .tb{width:20px;height:20px;border-radius:5px}
 #rail .tb svg{width:12px;height:12px}
-.view-presets{position:absolute;right:2px;top:5px;display:flex;flex-direction:column;align-items:stretch;gap:2px;padding:3px 2px;width:30px;border-radius:8px;background:rgba(13,15,20,0.88);border:1px solid var(--ln);z-index:16}
-.view-presets button{height:18px;width:100%;padding:0 1px;border:0;border-radius:4px;background:transparent;color:var(--tx2);font:700 8px/1 Inter,system-ui,sans-serif;text-align:center;cursor:pointer}
-.view-presets button:hover,.view-presets button:active{background:var(--bg3);color:var(--ac)}
+.view-presets{position:absolute;right:6px;top:8px;display:flex;flex-direction:column;align-items:center;gap:3px;padding:0;width:auto;border-radius:0;background:transparent;border:0;z-index:16}
+.view-presets button{width:30px;height:30px;display:grid;place-items:center;padding:0;border:0;border-radius:8px;background:transparent;color:var(--tx2);cursor:pointer;filter:drop-shadow(0 1px 2px rgba(0,0,0,0.75))}
+.view-presets button svg{width:17px;height:17px;pointer-events:none}
+.view-presets button:hover,.view-presets button:active{background:rgba(255,255,255,0.09);color:var(--ac)}
 .viewport-hints{position:absolute;left:34px;bottom:6px;max-width:calc(100% - 205px);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;padding:3px 7px;border-radius:6px;background:rgba(13,15,20,0.68);color:var(--tx2);font:600 9px Inter,system-ui,sans-serif;pointer-events:none;z-index:4}
 .stats-hud{position:absolute;right:6px;bottom:6px;display:flex;gap:5px;padding:3px 6px;border-radius:6px;background:rgba(13,15,20,0.68);color:var(--tx3);font:600 8.5px ui-monospace,monospace;pointer-events:none;z-index:9}
 .stats-hud .engine{color:var(--ac);text-transform:uppercase}
@@ -184,9 +185,17 @@
 .ro-main{flex:1;display:flex;align-items:center;gap:6px;border:0;background:transparent;color:var(--tx);font:500 11px Inter,system-ui,sans-serif;text-align:left;cursor:pointer;overflow:hidden}
 .ro-actions{display:flex;gap:2px}
 .ro-ib{width:20px;height:20px;display:grid;place-items:center;border:0;background:transparent;color:var(--tx2);border-radius:6px;cursor:pointer;font-size:10.5px}
-#pip{position:fixed;left:4px;top:45px;width:88px;z-index:14;display:block;pointer-events:auto}
-.pip-frame{position:relative;width:100%;aspect-ratio:16/9;border:1.5px solid var(--ac);border-radius:7px;overflow:hidden;background:#0b0c10;box-shadow:0 4px 12px rgba(0,0,0,0.45)}
+#pip{position:fixed;left:0;top:45px;width:88px;z-index:48;display:block;pointer-events:auto}
+.pip-frame{position:relative;width:100%;aspect-ratio:16/9;border:1.5px solid var(--ac);border-left:none;border-radius:0 7px 7px 0;overflow:hidden;background:#0b0c10;box-shadow:0 4px 12px rgba(0,0,0,0.45)}
 .pip-badge{position:absolute;left:4px;top:3px;padding:1px 4px;border-radius:3px;background:rgba(10,12,18,0.75);color:var(--ac);font:700 7.5px/1 Inter,sans-serif;pointer-events:none}
+.pip-arrow{position:absolute;right:-24px;top:50%;transform:translateY(-50%);width:22px;height:28px;display:grid;place-items:center;border:1px solid var(--ln2);border-left:none;border-radius:0 6px 6px 0;background:rgba(14,18,26,.92);color:var(--tx);cursor:pointer;padding:0;z-index:2}
+.pip-arrow:active{background:var(--bg3)}
+.pip-arrow.open svg{transform:rotate(180deg)}
+.pip-zoom{position:absolute;right:-26px;top:calc(50% + 18px);display:none;flex-direction:column;align-items:center;gap:4px;padding:4px 2px;background:rgba(14,18,26,.92);border:1px solid var(--ln2);border-radius:8px;z-index:2}
+.pip-zoom.open{display:flex}
+.pip-zbtn{width:20px;height:20px;display:grid;place-items:center;border:0;border-radius:6px;background:var(--bg2);color:var(--tx);font:700 13px/1 Inter,sans-serif;cursor:pointer;padding:0}
+.pip-zbtn:active{background:var(--ac);color:#0b0c10}
+.pip-pct{font:700 8.5px/1 ui-monospace,monospace;color:var(--ac);white-space:nowrap}
 
 .tl-clip-actions{display:flex;align-items:center;gap:4px;padding:3px 8px;background:#0d0f15;border-bottom:1px solid rgba(255,255,255,0.08);overflow-x:auto;scrollbar-width:none}
 .tl-clip-actions::-webkit-scrollbar{display:none}
@@ -1084,55 +1093,128 @@ body.agent-tab-open.agent-preview-split #cv {
 #rail {
   position: fixed !important;
   left: 8px !important;
-  top: 52px !important;
+  /* Start below the PiP card (top 52 + 77 card height + 8 gap = 137) so the
+     rail and the PiP controls never overlap. */
+  top: 137px !important;
   z-index: 9 !important; /* Strictly below #dock (z-index 15) */
-  width: 32px !important;
-  padding: 4px 3px !important;
-  gap: 3px !important;
-  border-radius: 11px !important;
-  background: rgba(14, 18, 26, 0.9) !important;
-  border: 1px solid rgba(255, 255, 255, 0.1) !important;
-  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.45) !important;
-  max-height: calc(100vh - var(--dh, 180px) - 64px) !important;
+  width: auto !important;
+  padding: 0 !important;
+  gap: 4px !important;
+  border-radius: 0 !important;
+  background: transparent !important;
+  border: 0 !important;
+  box-shadow: none !important;
+  max-height: calc(100vh - var(--dh, 180px) - 149px) !important;
   overflow-y: auto !important;
   scrollbar-width: none !important;
 }
 #rail::-webkit-scrollbar { display: none !important; }
 #rail .tb {
-  width: 24px !important;
-  height: 24px !important;
-  border-radius: 7px !important;
+  width: 26px !important;
+  height: 26px !important;
+  border-radius: 8px !important;
 }
 #rail .tb svg {
-  width: 13px !important;
-  height: 13px !important;
+  width: 15px !important;
+  height: 15px !important;
+  filter: drop-shadow(0 1px 2px rgba(0, 0, 0, 0.85));
+}
+#rail .tb,
+.view-presets button,
+.pip-arrow {
+  touch-action: manipulation !important;
 }
 #pip {
   position: fixed !important;
-  left: 46px !important;
+  left: 0 !important;
   top: 52px !important;
-  width: 86px !important;
-  z-index: 8 !important;
+  width: 112px !important;
+  z-index: 48 !important;
+  display: block !important;
+  pointer-events: auto !important;
+}
+body.agent-tab-open #pip {
+  display: block !important;
+  pointer-events: auto !important;
 }
 .view-presets {
-  right: 8px !important;
+  right: 6px !important;
   top: 8px !important;
   z-index: 8 !important;
-  background: rgba(14, 18, 26, 0.88) !important;
-  border: 1px solid rgba(255, 255, 255, 0.1) !important;
-  border-radius: 9px !important;
+  background: transparent !important;
+  border: 0 !important;
+  border-radius: 0 !important;
+  box-shadow: none !important;
+  padding: 0 !important;
+  width: auto !important;
+  gap: 3px !important;
+}
+.view-presets button {
+  width: 30px !important;
+  height: 30px !important;
+}
+.view-presets button svg {
+  width: 17px !important;
+  height: 17px !important;
+}
+/* Hide non-essential viewport overlay text (hints + perf stats) */
+#viewport-hints,
+#viewport-stats {
+  display: none !important;
+}
+/* Slim PiP collapse/expand handle */
+.pip-arrow {
+  right: -16px !important;
+  width: 16px !important;
+  height: 34px !important;
+  padding: 0 !important;
+  border: 1px solid var(--ln2) !important;
+  border-left: none !important;
+  border-radius: 0 5px 5px 0 !important;
+  background: rgba(14, 18, 26, 0.82) !important;
+  opacity: 0.9 !important;
+}
+.pip-arrow svg {
+  width: 8px !important;
+  height: 8px !important;
+  stroke-width: 2 !important;
+  transform: rotate(180deg) !important;
+  transition: transform 0.18s ease !important;
+}
+.pip-arrow.open svg {
+  transform: rotate(180deg) !important;
+}
+/* Collapsed PiP: hide the preview, keep only the slim handle at the left edge */
+#pip.collapsed {
+  width: 0 !important;
+}
+#pip.collapsed .pip-frame,
+#pip.collapsed .pip-zoom {
+  display: none !important;
+}
+#pip.collapsed .pip-arrow {
+  right: auto !important;
+  left: 0 !important;
+  top: 0 !important;
+  transform: none !important;
+}
+#pip.collapsed .pip-arrow svg {
+  transform: rotate(0deg) !important;
 }
 #dock {
   z-index: 15 !important;
   box-shadow: 0 -8px 28px rgba(0, 0, 0, 0.55) !important;
 }
 
-/* When Agent tab is open (either full-screen or split 3D preview), hide floating #rail & #pip so they NEVER collide with the Agent sheet */
+/* When Agent tab is open, hide #rail & #ob. #pip stays visible flush-left on top. */
 body.agent-tab-open #rail,
-body.agent-tab-open #pip,
 body.agent-tab-open #ob {
   display: none !important;
   pointer-events: none !important;
+}
+body.agent-tab-open #pip {
+  display: block !important;
+  pointer-events: auto !important;
 }
 body.agent-tab-open.agent-preview-split #topbar {
   display: flex !important;
@@ -1387,4 +1469,369 @@ body.agent-tab-open.agent-preview-split #agent-split-toggle-btn,
   #topbar { backdrop-filter: none !important; -webkit-backdrop-filter: none !important; background: rgba(11,14,20,0.97) !important; }
   .tl-clip-name { backdrop-filter: none !important; -webkit-backdrop-filter: none !important; }
   #dock, #dock .tl-panel, #dock .tl-body { backdrop-filter: none !important; -webkit-backdrop-filter: none !important; }
+}
+
+/* =========================================================
+   Outliner (#ob) — readable rows: full object name on top,
+   action buttons on a second line (no more "Cu"/"Pe" clipping)
+   ========================================================= */
+#ob {
+  right: 50px !important;
+  top: 52px !important;
+  width: 196px !important;
+  max-height: min(48vh, calc(100% - var(--dh, 92px) - 64px)) !important;
+  padding: 0 !important;
+  overflow: hidden !important;
+  border-radius: 12px !important;
+  z-index: 15 !important;
+  background: rgba(12, 15, 21, 0.94) !important;
+  border: 1px solid rgba(255, 255, 255, 0.09) !important;
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5) !important;
+}
+#ob .ob-head {
+  height: 30px !important;
+  padding: 0 10px !important;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.07) !important;
+  font-size: 11px !important;
+  letter-spacing: 0.02em !important;
+}
+#ob .ob-list {
+  padding: 6px !important;
+  gap: 6px !important;
+  overflow-y: auto !important;
+  overflow-x: hidden !important;
+  touch-action: pan-y !important;
+}
+#ob .ro {
+  display: flex !important;
+  flex-wrap: wrap !important;
+  align-items: center !important;
+  justify-content: flex-start !important;
+  height: auto !important;
+  gap: 5px !important;
+  padding: 5px 6px !important;
+  border: 1px solid rgba(255, 255, 255, 0.06) !important;
+  border-radius: 10px !important;
+  background: rgba(255, 255, 255, 0.028) !important;
+}
+#ob .ro.on {
+  border-color: rgba(61, 219, 176, 0.5) !important;
+  background: rgba(61, 219, 176, 0.09) !important;
+}
+#ob .ro-main {
+  flex: 1 0 100% !important;
+  min-width: 0 !important;
+  height: 24px !important;
+  padding: 0 2px !important;
+  gap: 7px !important;
+  border: 0 !important;
+  background: transparent !important;
+  text-align: left !important;
+}
+#ob .ro-icon {
+  flex: none !important;
+  display: grid !important;
+  place-items: center !important;
+  width: 18px !important;
+  height: 18px !important;
+  color: var(--tx2) !important;
+}
+#ob .ro-icon svg {
+  width: 15px !important;
+  height: 15px !important;
+}
+#ob .ro-name {
+  flex: 1 1 auto !important;
+  min-width: 0 !important;
+  overflow: hidden !important;
+  text-overflow: ellipsis !important;
+  white-space: nowrap !important;
+  text-align: left !important;
+  font-size: 11.5px !important;
+  line-height: 1.2 !important;
+}
+#ob .ro-actions {
+  flex: 1 0 100% !important;
+  display: flex !important;
+  gap: 4px !important;
+}
+#ob .ro-actions .ro-ib {
+  flex: 1 1 0 !important;
+  width: auto !important;
+  height: 28px !important;
+  padding: 0 !important;
+  border-radius: 7px !important;
+  border: 1px solid rgba(255, 255, 255, 0.07) !important;
+  background: rgba(255, 255, 255, 0.05) !important;
+  color: var(--tx2) !important;
+  font-size: 14px !important;
+  line-height: 1 !important;
+}
+#ob .ro-actions .ro-ib svg {
+  width: 15px !important;
+  height: 15px !important;
+  pointer-events: none !important;
+}
+#ob .ro-actions .ro-ib:active {
+  background: rgba(61, 219, 176, 0.18) !important;
+  color: var(--ac) !important;
+}
+#ob .ro-actions .ro-ib.danger:active {
+  background: rgba(255, 90, 90, 0.2) !important;
+  color: #ff8a8a !important;
+}
+#ob .ro-actions .ro-ib:disabled {
+  opacity: 0.3 !important;
+}
+
+/* Keep the outliner / view-preset buttons clear of the screen edge */
+.view-presets {
+  right: 12px !important;
+}
+
+/* Narrow phones: make the top bar fit so the Outliner (layers) icon
+   never gets pushed off-screen */
+@media (max-width: 520px) {
+  #topbar {
+    padding: 0 7px !important;
+    gap: 4px !important;
+  }
+  #topbar .left {
+    gap: 4px !important;
+  }
+  #topbar .right {
+    gap: 2px !important;
+  }
+  #topbar .tb {
+    width: 30px !important;
+    height: 30px !important;
+  }
+  #topbar .tb svg {
+    width: 15px !important;
+    height: 15px !important;
+  }
+  .top-home-btn {
+    width: 30px !important;
+    padding: 0 !important;
+    justify-content: center !important;
+  }
+  .top-home-btn span {
+    display: none !important;
+  }
+  #mode {
+    max-width: 118px !important;
+    padding: 0 8px !important;
+    font-size: 10.5px !important;
+    overflow: hidden !important;
+    text-overflow: ellipsis !important;
+  }
+}
+
+/* Extra-narrow phones (<=380px): tighter top bar so the last icon
+   (Outliner/Layers) always remains fully visible */
+@media (max-width: 380px) {
+  #topbar {
+    padding: 0 5px !important;
+    gap: 2px !important;
+  }
+  #topbar .tb {
+    width: 28px !important;
+    height: 28px !important;
+  }
+  #topbar .tb svg {
+    width: 14px !important;
+    height: 14px !important;
+  }
+  .top-home-btn {
+    width: 28px !important;
+    height: 28px !important;
+  }
+  .top-home-btn svg {
+    width: 13px !important;
+    height: 13px !important;
+  }
+  #mode {
+    max-width: 100px !important;
+    padding: 0 7px !important;
+    font-size: 10px !important;
+  }
+}
+
+/* Very narrow screens: drop the least essential icon (Frame Selection)
+   so Undo/Redo/Save/Outliner stay comfortably on screen */
+@media (max-width: 340px) {
+  #topbar #top-frame {
+    display: none !important;
+  }
+}
+
+/* ---------------------------------------------------------------------------
+   PiP — small card: header (PIP | % | + | − | ‹) + short 16:9 preview.
+   Compact enough to stay clear of the left tool rail.
+   --------------------------------------------------------------------------- */
+#pip {
+  position: fixed !important;
+  left: 6px !important;
+  top: 52px !important;
+  width: 100px !important;
+  height: auto !important;
+  padding: 0 !important;
+  border: 1.5px solid #8ab3a8 !important;
+  border-radius: 5px !important;
+  background: #0f1014 !important;
+  box-shadow: 0 8px 22px rgba(0, 0, 0, 0.5) !important;
+  overflow: hidden !important;
+  z-index: 70 !important;
+  pointer-events: auto !important;
+}
+#pip .pip-head {
+  display: flex !important;
+  align-items: center !important;
+  gap: 3px !important;
+  width: 100% !important;
+  height: 18px !important;
+  padding: 0 4px !important;
+  background: #191e24 !important;
+  border-bottom: 1px solid #2c3138 !important;
+  box-sizing: border-box !important;
+}
+#pip .pip-badge {
+  position: static !important;
+  display: inline-flex !important;
+  align-items: center !important;
+  height: 10px !important;
+  padding: 0 2px !important;
+  border: 1px solid #3a424a !important;
+  border-radius: 3px !important;
+  background: transparent !important;
+  color: #8fd8c0 !important;
+  font: 700 6.5px/1 Inter, system-ui, sans-serif !important;
+  letter-spacing: 0.3px !important;
+  text-transform: uppercase !important;
+  pointer-events: none !important;
+}
+#pip .pip-pct {
+  position: static !important;
+  margin-left: auto !important;
+  width: auto !important;
+  transform: none !important;
+  color: #7fd6b8 !important;
+  font: 700 7.5px/1 ui-monospace, monospace !important;
+  white-space: nowrap !important;
+  pointer-events: none !important;
+}
+#pip .pip-zoom {
+  position: static !important;
+  display: flex !important;
+  flex-direction: row !important;
+  align-items: center !important;
+  gap: 3px !important;
+  width: auto !important;
+  height: auto !important;
+  padding: 0 !important;
+  margin: 0 !important;
+  border: 0 !important;
+  background: none !important;
+  pointer-events: auto !important;
+}
+#pip .pip-zoom::before {
+  content: none !important;
+  display: none !important;
+}
+#pip .pip-zbtn {
+  position: static !important;
+  display: grid !important;
+  place-items: center !important;
+  width: 12px !important;
+  min-width: 12px !important;
+  height: 10px !important;
+  min-height: 10px !important;
+  padding: 0 !important;
+  border: 1px solid #2e3d3a !important;
+  border-radius: 3px !important;
+  background: #1e2a29 !important;
+  color: #9fe0cb !important;
+  font: 700 9px/1 Inter, system-ui, sans-serif !important;
+  pointer-events: auto !important;
+  touch-action: manipulation !important;
+}
+#pip .pip-zbtn:active {
+  background: #2b3f3a !important;
+  color: #d6fff0 !important;
+}
+#pip .pip-arrow {
+  position: static !important;
+  /* The base .pip-arrow is absolutely positioned with top:50% and
+     translateY(-50%); "position:static" alone leaves that transform in place
+     and pushes the button above the other header controls. Reset all of it. */
+  top: auto !important;
+  right: auto !important;
+  left: auto !important;
+  bottom: auto !important;
+  transform: none !important;
+  align-self: center !important;
+  display: grid !important;
+  place-items: center !important;
+  width: 12px !important;
+  height: 10px !important;
+  padding: 0 !important;
+  margin: 0 !important;
+  border: 1px solid #3a4450 !important;
+  border-radius: 3px !important;
+  background: #171c22 !important;
+  color: #b6c6c2 !important;
+  opacity: 1 !important;
+  pointer-events: auto !important;
+  touch-action: manipulation !important;
+}
+/* Chevron in the markup already points left; flip only when collapsed. */
+#pip .pip-arrow svg {
+  width: 5px !important;
+  height: 8px !important;
+  pointer-events: none !important;
+  transform: none !important;
+  transition: transform 0.18s ease !important;
+}
+#pip .pip-frame {
+  position: relative !important;
+  display: block !important;
+  width: 100% !important;
+  height: 56px !important;
+  aspect-ratio: auto !important;
+  border: 0 !important;
+  border-radius: 0 !important;
+  background: #0b0c10 !important;
+  box-shadow: none !important;
+  overflow: hidden !important;
+  pointer-events: auto !important;
+}
+
+/* Collapsed: tiny 28x28 card with only the arrow. */
+#pip.collapsed {
+  width: 28px !important;
+  height: 28px !important;
+  overflow: hidden !important;
+}
+#pip.collapsed .pip-head {
+  height: 100% !important;
+  padding: 0 !important;
+  justify-content: center !important;
+  border-bottom: 0 !important;
+}
+#pip.collapsed .pip-badge,
+#pip.collapsed .pip-pct,
+#pip.collapsed .pip-zoom,
+#pip.collapsed .pip-frame {
+  display: none !important;
+}
+#pip.collapsed .pip-arrow {
+  width: 24px !important;
+  height: 24px !important;
+  border: 0 !important;
+  background: transparent !important;
+}
+#pip.collapsed .pip-arrow svg {
+  width: 7px !important;
+  height: 11px !important;
+  transform: rotate(180deg) !important;
 }

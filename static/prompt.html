@@ -1,0 +1,309 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Copy Shortmeshi feature list</title>
+<style>
+*{box-sizing:border-box}body{margin:0;padding:14px;background:#0b0d12;color:#dfe6ef;font:14px/1.4 system-ui,sans-serif}
+h2{margin:0 0 10px;font-size:17px}
+button{width:100%;height:54px;border:0;border-radius:12px;background:#3dd9a8;color:#08110e;font-size:17px;font-weight:800}
+#s{min-height:22px;margin:10px 0;color:#8fd8c0;font-weight:700}
+textarea{width:100%;height:64vh;padding:10px;border:1px solid #33404d;border-radius:10px;background:#11151c;color:#cfe0dc;font:12px/1.45 ui-monospace,monospace}
+p{color:#9aa3b2;font-size:13px}
+</style></head><body>
+<h2>Complete feature list + tool/icon directory — tap COPY ALL</h2>
+<button id="b" onclick="doCopy()">COPY ALL</button>
+<div id="s"></div>
+<textarea id="t" readonly spellcheck="false">PROJECT BRIEF — Shortmeshi / &quot;Toon Studio 3D&quot; (complete feature inventory)
+
+You cannot see the source files. Use ONLY this description as ground truth.
+Root: /data/data/com.termux/files/home/Shortmeshi. Package: toon-studio v1.0.0, private, ESM.
+Stack: SvelteKit 2 + Svelte 5 + Vite 5 + adapter-static, Tailwind 3, TypeScript, Playwright, optional Tauri, embedded WASM (toon_engine_wasm / static/engine.wasm).
+There are two parallel layers: (1) readable Svelte source under src/, and (2) the prebuilt &quot;latest UI&quot; under static/ which is what is actually served at /. The served entry is static/index-latest-ui.html; it is mostly empty shell containers that static/studio-pro-bundle.js (~736 KB, semi-minified) fills at runtime. Global debug handle: window.__toon = { scene, timeline, sceneStore, timelineStore, viewportStore, createProject, validateProject, applyProject, curves, strips, setDuration, layerMediaMap }. Also window.__STUDIO_ICONS, window.__openStudioHome, window.__closeStudioHome.
+
+1. TOP-LEVEL UI REGIONS
+- body has class &quot;agent-tab-open&quot; by default; #dock has &quot;agent-fullscreen-active&quot; by default, so the app opens on the FULL-SCREEN AGENT screen, not the 3D editor.
+- #app.app-root contains: #cv (3D viewport), #rail (left tool rail), #topbar (app bar), #dock (bottom dock: agent bar + timeline + action panel + status strip), #ob (outliner), #dlg (save/open/new dialog), #agent-settings-modal, #studio-home-overlay (landing page, .open initially), #msg toast.
+- 3D viewport #cv contains: #viewport-canvas (WebGL2), #rig-overlay-canvas, hidden #look-tex-file-input, #gl-error, #cam-safe-frame overlay with 9-cell grid and camera HUD badge (&quot;Camera Active · 50mm&quot; default; runtime text like &quot;CAM: &lt;name&gt; · 50mm · FOV 50° · Tracking: &lt;target&gt; (&lt;mode&gt;)&quot;), .view-presets with 7 camera buttons (active camera view, front, right, left, top, bottom, isometric/3D perspective), viewport hints, grid-snap toggle, hidden fps/tris/objects stats, #element-mode (Vertex default / Edge / Face), the PiP card, and hidden game controls (#pad D-pad, #jmp jump, #sc score).
+
+2. WORKSPACES / MODES
+- 11 workspaces: Model, Edit, Sculpt, UV/Paint, Shade, Rig, Animate, Physics, Game, Render, Agent. Each has a label, icon, color, a descriptive chip subtitle and a one-line hint.
+- 7 main bottom tabs: Add, Edit, Sculpt, Rig, Animate, Look, Agent (data-testid chip-0..chip-6). On narrow screens the topbar tab nav hides and a mode pill cycles workspaces. Mapping: physics/game/animate -&gt; Animate; render/shade/uv -&gt; Look; agent -&gt; Agent.
+
+3. TOP BAR
+- Home button (opens Studio Projects Hub), mode pill with pulsing green dot, workspace tabs (≥860px), Undo (Ctrl+Z), Redo (Ctrl+Y), Save (Ctrl+S), Frame Selection (F), Outliner toggle. ≤520px/380px/340px breakpoints progressively shrink controls; at ≤340px Frame Selection hides so Undo/Redo/Save/Outliner remain visible.
+
+4. LEFT TOOL RAIL
+- Tools: Select (V), Move (G), Rotate (R), Scale (S), Pan; plus a sticky timeline toggle at the bottom. Dynamic hints per tool (&quot;Drag gizmo arrows…&quot;, &quot;Drag rings…&quot;, &quot;Drag handles…&quot;, &quot;Drag to pan view · pinch/scroll to zoom&quot;) plus special hints for cut/detect tools. Fixed at left 8px, top 137px (starts below the PiP card), scrollable, hidden while the Agent tab is open.
+
+5. VIEWPORT BEHAVIORS
+- Gizmos for translate/rotate/scale; drag to orbit; shift/middle/right-drag to pan; two-finger pinch/scroll to zoom; tap to select; grid-snap toggle; grid/axes/bounds/wireframe/normals overlays; X-Ray; 3D cursor with set/toggle.
+- Frame Selected (F) / Frame All (Shift+F). Shading modes: Solid, Material Preview, Rendered, Wireframe, Grid, Axes. Render FX: shadows, ambient occlusion, bloom/glow, anti-aliasing.
+- Adaptive quality: __qMul lowers DPR when frame time &gt;31ms, raises it when &lt;17ms. Low-end detection (hardwareConcurrency&lt;=4 || deviceMemory&lt;=4 || coarse pointer) caps DPR and defaults video to VP8/720p with blur disabled. WebGL2 renderer with WASM mesh ops (vertices/triangles/normals/refit/ray-cast).
+
+6. TIMELINE (VN / CapCut style, up to 3600 s / 1 hour)
+- Header: step back one frame, Play/Pause (Space), step forward one frame, current time readout. Right icons: Add Keyframe (K/I), Delete Key, Zoom Out/In, Undo, Redo.
+- Clip action bar: Split, Speed, Reverse, Freeze (2s), Duplicate, Copy, Paste, Opacity, Replace, Delete, Save, Camera Track, View Cam. Speed sub-drawer: 0.25x/0.5x/1x/1.5x/2x/4x/8x + slider.
+- Body: ruler, center playhead, scrollable clip rows, &quot;+&quot; upload button that accepts ANY file (video/image/audio/.OBJ/.STL/.JSON).
+- Clips show name, duration, trim handles and colored keyframe diamonds (location blue, rotation green, scale yellow). Mute/Solo controls, text/image/video layers, auto-key, loop, fps selector, start/end frames, Linear/Bezier/Step interpolation, graph editor with red/green/blue F-curves (click to scrub), onion skin (ghosts/step/alpha).
+
+7. PER-TAB ACTION PANELS
+- Add tab: crossover pills (Primitives / Edit Tools / Rig Bones / Sculpt / Materials / All-in-One). Full primitive catalog: Cube, UV Sphere, Ico Sphere, Cylinder, Cone, Torus, Plane, Circle, Grid, Pyramid, Tube, Capsule; Bezier Curve, Bezier Circle, Path, NURBS Curve; Point/Sun/Spot/Area lights; Perspective/Orthographic cameras; Plain Axes/Arrows/Cube/Sphere/Circle/Image empties; 3D Text; imports (Device Model, Reference Image, Suzanne, Tree, Car, Character, Chair); Armature Bone, Metaball, Lattice, Force Field, Audio Speaker, Coin Plate. Each has live creation sliders (radius, segments, rings, subdivisions, size, intensity, fov, text value, etc.). Adding auto-switches to Move + gizmo; cameras auto-wire to the PiP preview.
+- Edit tab: Vertex/Edge/Face mode; Extrude, Bevel, Loop Cut, Subdivide, Duplicate, Delete, Mirror X/Y/Z, Array, Solidify, Smooth, Box UV, Planar UV, a cut tool (draw a line across the mesh to slice), coplanar auto-detect.
+- Sculpt tab: 12 brushes (Draw, Clay Strips, Smooth, Inflate, Grab, Snake Hook, Pinch, Crease, Flatten, Fill, Mask, Simplify), invert/add-subtract, hold-to-smooth, size/strength/hardness sliders, falloff curves (Smooth/Linear/Hard), X/Y/Z symmetry, voxel/remesh, quick-smooth.
+- Rig tab: Edit Bones / Pose Mode / Weight Paint, X-Ray, Names, Multi-Sel, bone layers. Edit tools: Add Bone, Biped Rig, 3-Bone Chain, Demo Char+Rig, Extrude, Subdivide, Duplicate, Delete, Move/Rotate/Scale, Parent (connected/offset), Connect/Disconnect, Clear Parent, Flip Direction, Recalc Roll, Symmetrize .L-&gt;.R, Name L/R, Automatic Weights. Pose tools: rotate/move/scale bone, local/global orientation, reset pose, clear transforms, IK constraints (target, chain 1-6, influence), constraint library (Copy Rot/Loc, Limit Rot/Loc, Child Of, Damped Track), pose library (rest, T-Pose, Wave Hi, Walk Stride, Action Jump, Save Pose). Weight tools: active bone select, lock, radius/strength, blue-&gt;red heatmap legend, auto weights, Add/Subtract/Blur/Lighten/Darken brushes, Normalize, Mirror X, Flood Fill.
+- Animate tab: Auto-Key, Loop, Prev/Next Key, key channels, interpolation, FPS, End frame, Snap, track filter; drawers for Graph Curves and Onion Skin; strip tools Hide/Open Timeline, Graph Curves, Onion Skin, Key Armature, Copy Pose, Paste Flipped (.L&lt;-&gt;.R), Auto Walk Cycle, Bake Physics, Driver: Spin, Driver: Bounce.
+- Look tab: sub-nav Material / Texture / Lighting / Camera / Render. Material: preview sphere, slots, blend mode, base color, metal, rough, spec, emission, alpha, normal strength, preset swatches (also applies to selected faces). Texture: channels Base Color/Roughness/Metallic/Normal/Emission, mapping, Upload Image, Clear, procedural Checker/Noise/Gradient/Brick/Wood/Marble/Carbon, UV scale/loc/rot/influence. Lighting: Point/Sun/Spot/Area add, color/power/radius/angle/shadows, world background/ambient/HDRI/env strength. Camera: add/select, Camera View, Cam to View, Lock to View, Persp/Ortho, 15-135mm focal, clip start/end, roll, depth of field, focus distance, aperture. Render: shading modes + X-Ray/Grid/Axes/3D Cursor, FX toggles, resolution presets (1920x1080, 1080x1920, 1080x1080, 3840x2160), video res (480p/720p/1080p), Record Video, Render PNG, Export OBJ, Save Project.
+- Agent tab: action panel intentionally empty; the full Agent UI lives in #agent-bar-wrap.
+
+8. AGENT STUDIO (the default screen, a 1:1 clone of the &quot;Agent Section UI&quot;)
+- Top bar: hamburger, green dot + &quot;Agent&quot;, New Chat. Slide-down feature menu (11 items): Projects Hub (Home), Toggle 3D Split View, Open Full 3D Editor, API Providers &amp; MCP, Spin the Cube, Bouncing Ball Loop, Low-Poly 3D Tree, Build Robot &amp; Coins, Auto-Rig Armature, Download Project (.json), Clear 3D Scene.
+- Hero &quot;What are we building?&quot; with quick starters (Spin the cube, Bouncing ball loop, Low-poly tree) and command examples (/anim-director Orbit camera, /rig-mcp Auto-rig).
+- Slash palette &quot;MCP &amp; SKILLS COMMANDS&quot;: /anim-director, /rig-mcp, /asset-architect, /toon-shader, plus &quot;Configure All -&gt;&quot;.
+- Mode pill Animation/3D Asset, split-view toggle (&quot;Hide 3D Preview&quot;), composer with clear, attachments, textarea (default prompt &quot;Make the cube rotate 360° in 3 seconds and loop&quot;), + attachment, &quot;/&quot; MCP shortcut, Settings, provider pill (&quot;Auto&quot;), green Send. Enter sends, Shift+Enter newline.
+- Settings modal tabs: API Providers (12: Google AI Studio Gemini, Groq, OpenRouter, Cerebras, NVIDIA NIM, Mistral, Hugging Face, Cohere, GitHub Models, Together AI, Cloudflare Workers AI, DeepSeek/Custom OpenAI — each with key, endpoint, model presets, temperature, maxTokens, enabled), MCP (5: Live Scene Graph, PolyHaven PBR/HDRI, Sketchfab glTF, WebGL2 GLSL Compiler, Humanoid Rig &amp; Motion Solver), Skills (6: Procedural 3D Asset Architect, Keyframe &amp; Trajectory Director, Armature &amp; Skin Weight Solver, Cel-Shading &amp; Outline Pipeline, Mesh Boolean &amp; Topology Optimizer, Camera &amp; Focal Lens Choreographer). Persisted in localStorage gizmo3d_agent_providers_v1 / _mcp_v1 / _skills_v1; custom providers/skills supported.
+- Procedural builders: spin cube, bounce ball, low-poly tree, hero robot + coin ring, auto-rig 3-bone chain. Local command parser understands add primitives with counts/colors, spin/bounce/orbit/fall animation, play/pause, add key, color, move, rotate, scale, undo/redo, clear, game mode, score reset, help. LLM providers get a system prompt asking for one concise command.
+
+9. DIALOGS &amp; LANDING PAGE
+- Save/Open/New dialog: project name (default &quot;Toon Project&quot;), object/keyframe counts, Download .tsf.json, Save in browser, list of browser-saved projects with dates, New confirms clearing scene + keys. Autosave to localStorage restores last session.
+- Studio Home / Project Hub: &quot;Toon Studio 3D&quot;, &quot;60 fps · WASM&quot;, &quot;Start a 3D project.&quot;, Create project / Import, four example cards (Cozy House, Toy Car, City Block, Around the World) that spawn real assembled multi-object scenes, plus &quot;Saved in Browser&quot; count and &quot;+ Save current scene&quot;.
+
+10. PHYSICS, GAME, AUDIO
+- Per-object physics {dynamic, mass, restitution, friction, velocity}; run/pause with gravity, engine stepPhysics(dt), Bake Physics converts simulation to keyframes.
+- Game mode: D-pad + jump + score HUD, arrow keys/WASD move the selected object, Space jumps, coin collection removes the coin and adds 10 points, WebAudio beeps (440 Hz jump, 880 Hz coin), score/gameMode/resetScore/resetGameInput in scene store.
+
+11. EXPORTS / FILE I/O
+- Video export (Chrome/Edge only): canvas.captureStream(30) + MediaRecorder, VP9 -&gt; VP8 -&gt; webm -&gt; mp4 preference (low-end VP8/720p), 2.2/4.5/9 Mbps by resolution, up to 3600 s, File System Access showSaveFilePicker -&gt; OPFS fallback -&gt; in-memory Blob capped at 400 MB; floating REC timer + Stop; restores camera/timeline/render size; downloads toon-studio-&lt;timestamp&gt;.&lt;ext&gt;.
+- PNG render at chosen resolution, OBJ export (scene.obj), project export/import .tsf.json (create/download/validate/apply), universal timeline import of video/image/audio/OBJ/STL/JSON, Agent attachments forwarded into the timeline import.
+
+12. KEYBOARD SHORTCUTS (ignored while typing in input/textarea/select)
+- Ctrl/Cmd+Z undo; Ctrl/Cmd+Shift+Z or Ctrl/Cmd+Y redo; Ctrl/Cmd+D duplicate; Ctrl/Cmd+S save dialog; Delete/Backspace delete selection; Space play/pause (jump in game mode); I or K add keyframe; G/R/S/V tools; F frame selection; Shift+F frame all; game arrows/WASD + Space; Agent Enter send, Shift+Enter newline, &quot;/&quot; opens slash palette; timeline shift/ctrl/meta-click multi-select. (Ctrl+N appears in a test but is NOT implemented.)
+
+13. PiP PREVIEW CARD — CURRENT FINAL DESIGN (authoritative)
+- This is the thing most recently edited. Card #pip: fixed left 6px, top 52px, EXACTLY 100px wide x about 77px tall (18px header + 56px preview + borders). Border 1.5px solid #8AB3A8, radius 5px, background #0F1014, shadow 0 8px 22px rgba(0,0,0,.5), overflow hidden, z-index 70.
+- TOP HEADER BAR (.pip-head) 18px tall, background #191E24, bottom border 1px #2C3138, flex row, align-items center, gap 3px, padding 0 4px. Left-to-right, NOTHING MISSING:
+  1. &quot;PIP&quot; outlined chip: transparent bg, 1px border #3A424A, radius 3px, uppercase bold 6.5px Inter, letter-spacing .3px, color #8FD8C0, 10px tall.
+  2. Zoom readout #pip-pct: mint monospace #7FD6B8, bold 7.5px, &quot;100%&quot; by default, margin-left:auto.
+  3. &quot;#pip-zoom&quot; horizontal group with &quot;#pip-plus&quot; &quot;+&quot; and &quot;#pip-minus&quot; &quot;-&quot;: each 12x10px, radius 3px, fill #1E2A29, border 1px #2E3D3A, glyph #9FE0CB, bold 9px; active state fill #2B3F3A / glyph #D6FFF0.
+  4. &quot;#pip-arrow&quot; chevron button: 12x10px, radius 3px, bg #171C22, border 1px #3A4450, color #B6C6C2. SVG is 5x8px, viewBox &quot;0 0 6 10&quot;, polyline &quot;4.5 1 1.5 5 4.5 9&quot;, stroke-width 1.6, round caps, POINTS LEFT. It MUST be vertically aligned with + and -: align-self:center, transform:none, top/right/left/bottom:auto. CRITICAL BUG THAT WAS FIXED: an old absolute-positioned rule had top:50% + translateY(-50%), which left a residual transform after switching to position:static and pushed the arrow upward. Never reintroduce that transform.
+- PREVIEW (.pip-frame) below the header: full width, height 56px, background #0B0C10, no border/radius/overlay, contains #pip-canvas rendering a small 3D cube on a dark grid. Old aspect-ratio:16/9 is overridden to auto.
+- COLLAPSED (#pip.collapsed): card becomes 28x28px; header fills 100%, padding 0, centered, no bottom border; badge/percent/zoom/preview hidden; arrow becomes 24x24 transparent and chevron rotates 180 degrees to point right for re-expand. The arrow must always remain reachable.
+- Behavior (static/studio-pro-overrides.js): capture-phase pointerdown hit-testing on #pip-arrow/#pip-plus/#pip-minus so taps work even when another layer covers them; 120 ms toggle guard + 600 ms single-tap guard against pointerdown/touchstart/click double-firing; click/keyboard fallback via closest(). Zoom calls viewportStore.setPIPZoom in 0.2 steps clamped [0.2,3]; readout = round(pipZoom/1.8*100). Defaults: pipZoom 1.8, pipCamera null, pipMode 0; setPIPCamera(id, mode) wires a camera to the preview. Collapsed state only toggles the class + aria-expanded + inline fallback hiding the frame; CSS owns geometry.
+- Left rail starts at top 137px = 52 + 77 + 8 so it never overlaps the PiP controls.
+- DO NOT use the older PiP design (bottom pill with &quot;- % +&quot;, outside vertical zoom column, external red-dot handle, 112/140px wide card). Only the top-header 100x77 card above is correct.
+
+14. PWA / CACHING
+- manifest.webmanifest: name &quot;Toon Studio&quot;, short &quot;ToonStudio&quot;, display fullscreen with display_override [fullscreen, standalone], theme/background #0b0c10, 192/512 icons (&quot;any maskable&quot;), category graphics/design/productivity, one shortcut &quot;New Project&quot; -&gt; /?new=true.
+- sw-register.js registers ./sw.js scope ./ on window.load. sw.js is DELIBERATELY NETWORK-ONLY: install -&gt; skipWaiting, activate -&gt; clients.claim, fetch -&gt; no respondWith. It exists only so Chrome offers &quot;Install app / Add to Home screen&quot;; there is NO offline cache and no caching must be added (a stale-cache bug happened before).
+- Strict CSP: default-src &#x27;self&#x27;; script-src &#x27;self&#x27; &#x27;wasm-unsafe-eval&#x27;; style-src &#x27;self&#x27; &#x27;unsafe-inline&#x27;; img-src &#x27;self&#x27; data: blob: https:; font-src &#x27;self&#x27; data:; connect-src &#x27;self&#x27; https: http:; media-src &#x27;self&#x27; blob: data:; worker-src &#x27;self&#x27; blob:; object-src &#x27;none&#x27;; base-uri &#x27;self&#x27;; form-action &#x27;self&#x27;. All JS therefore lives in external files.
+
+15. DEV / BUILD / SERVE
+- npm scripts: dev = vite dev (5173, 0.0.0.0); build = vite build &amp;&amp; node scripts/copy-static-entry.mjs; preview = vite preview; test/test:e2e (Playwright with webServer on 4173), test:unit, check/lint/format, tauri, bench:*, build:wasm (Rust -&gt; static/engine.wasm).
+- vite.config.ts plugin toonStudioLatestUiPlugin (enforce pre) serves static/index-latest-ui.html verbatim with Cache-Control:no-store for /, /index.html, /gizmo_studio_pro.html, /index-latest-ui.html, and restores it into build/index.html + build/200.html on closeBundle. scripts/copy-static-entry.mjs also overwrites build/404.html and deletes stale .gz/.br variants.
+- Running app: vite preview on http://127.0.0.1:4173/ kept alive by ~/Shortmeshi/serve.sh (supervisor loop with termux-wake-lock, restarts after 2s, logs at /data/data/com.termux/files/usr/tmp/shortmeshi-preview.log). ~/Shortmeshi/open.sh checks the server, starts it if down, then opens it with termux-open-url / Chrome. Start supervisor: setsid nohup ~/Shortmeshi/serve.sh &gt;/dev/null 2&gt;&amp;1 &amp;.
+- CRITICAL GOTCHA: editing a file under static/ is NOT enough — must run `npm run build`, because preview serves the HTML fresh but CSS/JS/WASM from the built output. After build, restart vite by PID (pgrep -f &quot;[v]ite preview&quot;), never pkill -f with a pattern that matches the invoking shell. Cache-bust query strings are bumped in the HTML (currently CSS/overrides ?v=2gb-20261121-arrow21, bundle ?v=2gb-20261121-back1, sw-register ?v=2gb-20261121-pwa1).
+- Body class agent-tab-open + dock agent-fullscreen-active are the default: the Agent screen is first. Use &quot;Open Full 3D Editor&quot; or Tab to reach the 3D editor.
+- There is no README in the Shortmeshi repo. Svelte source src/ exists but is not what is served.
+
+16. COMPANION SYSTEM — OpenCode Uploader (port 3000, SEPARATE from the app on 4173)
+- /data/data/com.termux/files/home/opencode-uploader: Express 5 + Multer 2 local file bridge, loopback-only 127.0.0.1:3000, no build step/CDN/database, mobile-first dark/light UI.
+- Purpose: upload any file (images, video, audio, PDF, SVG, archives, text) from the browser straight into the active OpenCode workspace so the agent can read it. This is how the user sends reference images — it is confirmed working (history.json + /api/info ok + raw file served 200).
+- UI: giant &quot;+&quot; card, drag &amp; drop, paste, search, XHR progress bars with cancel, thumbnails, copy path, open, download, delete, toasts, theme toggle. Up to 2 GiB per file, 20 files per request.
+- API: GET /api/info (version, pid, target, limits, uptime, counts), GET /api/history, POST /api/upload (multipart &quot;files&quot;, requires X-Uploader:1), POST /api/target (retarget running instance), GET /api/file/:id/raw (Range support, ?download=1), DELETE /api/file/:id. Mutation routes require X-Uploader:1 plus same-origin Origin/Sec-Fetch-Site.
+- Lifecycle: OpenCode V2 plugin integrations/opencode-plugin.ts starts it with UPLOAD_DIR = active workspace and a PARENT_PID watchdog; ~/.bashrc shell hook starts it for interactive Termux shells; health-checked single instance; 1.5s watchdog exits on parent death and removes pid file; plugin re-probes every 5s. CLI: uploader start/status/open/logs/restart/stop/doctor. Autostart toggle OPENCODE_UPLOADER_AUTOSTART=0.
+- Config env: PORT=3000, HOST=127.0.0.1, UPLOAD_DIR, MAX_FILE_SIZE=2147483648, MAX_FILES=20, PARENT_PID, OPENCODE_UPLOADER_HOME, OPENCODE_UPLOADER_NODE, OPENCODE_UPLOADER_DATA, OPENCODE_UPLOADER_AUTOSTART=1.
+- Uploaded files land in /data/data/com.termux/files/home with timestamped names; history in opencode-uploader/data/history.json. Target directory is never served statically; files are reachable only by history ID.
+
+CURRENT STATE (as of 2026-11-21): both servers are running (app 4173, uploader 3000); latest reference image was uploaded and the PiP was rebuilt as the 100x77 top-header card with the chevron alignment fixed; CSS braces balanced; jsdom control test test3.mjs reports ALL PASS.
+
+================================================================================
+17. TOOL / ICON DIRECTORY — ANALYZED FROM SOURCE (icon → what it does → where it lives)
+================================================================================
+LEGEND: every entry is &quot;icon name — label — action / location&quot;. Names below are the
+real labels/tooltips found in the app source; nothing is invented. Where an icon has
+no visible text, its internal icon key is shown.
+
+A. TOP BAR (always visible)
+- Home (door icon) — open Studio Projects Hub / landing page — top bar left.
+- Mode pill (colored dot + name) — cycles the 11 workspaces — top bar, most useful on phones.
+- Workspace tabs (7 colored dots: Model, Edit, Sculpt, UV/Paint, Shade, Rig, Animate, Physics, Game, Render, Agent) — switch workspace — top bar, shown at width &gt;= 860px.
+- Undo (curved back arrow) — undo last operation, Ctrl+Z — top bar right.
+- Redo (curved forward arrow) — redo, Ctrl+Y / Ctrl+Shift+Z — top bar right.
+- Save (down-arrow into tray) — open Save dialog, Ctrl+S — top bar right.
+- Frame Selection (frame/corners icon) — zoom camera to fit selected object, F — top bar right (hidden &lt;=340px).
+- Outliner (list icon) — show/hide the object list panel — top bar right.
+
+B. LEFT TOOL RAIL (hidden while Agent tab is open; fixed at top 137px, below PiP)
+- Select (arrow cursor, V) — click/tap to select objects.
+- Move (4-way arrows, G) — translate gizmo; drag arrows to move.
+- Rotate (circular arrow, R) — rotation rings; drag to rotate.
+- Scale (diagonal arrow + box, S) — scale handles; drag to resize.
+- Pan (hand) — drag to pan the camera; pinch/scroll to zoom.
+- Timeline toggle (clock/rail icon at bottom) — expand or collapse the bottom timeline.
+
+C. VIEWPORT OVERLAY
+- Camera View (eye in camera) — look through the active camera — view presets, top-right of viewport.
+- Front / Right / Left / Top / Bottom / Iso (axis-cube icons) — snap to those orthographic/perspective views — view presets.
+- Grid Snap (bracketed corners) — toggle snapping to grid — bottom of viewport.
+- Vertex / Edge / Face (dot / line / triangle) — mesh element selection mode — viewport element-mode strip.
+- Camera HUD badge — shows active camera name, 50mm, FOV and tracking target — center top of viewport when a camera is active.
+- Safe-frame grid — 9-cell composition guide overlay.
+- Grid / Axes / Bounds / Wireframe / Normals / X-Ray / 3D Cursor — visibility toggles — Look tab -&gt; Render and Agent feature controls.
+
+D. PiP PREVIEW CARD (most recent edit; left 6px / top 52px / 100x77px)
+- PIP chip — label only, tells you this is the mini camera preview — header left.
+- 100% — zoom readout, updates with +/- — header middle (was 167% in the reference mockup).
+- + (plus) — zoom the PiP camera IN one 0.2 step (range 0.2–3) — header, right side.
+- - (minus) — zoom the PiP camera OUT one step — header, right side.
+- chevron left ‹ — collapse the whole card to a 28x28 button; chevron flips to › to reopen — header far right.
+- The 3D cube preview canvas sits BELOW the header; no icons are drawn over it.
+
+E. TIMELINE HEADER (VN / CapCut bar)
+- Step Back (|◀ / comma) — move playhead back one frame.
+- Play/Pause (triangle / bars, Space) — start or stop playback.
+- Step Forward (▶| / period) — move playhead forward one frame.
+- Add Key (diamond, K/I) — add keyframes at playhead.
+- Delete Key (diamond with slash) — remove keyframes.
+- Zoom Out / Zoom In (magnifier -/+) — change timeline pixels-per-second.
+- Undo / Redo (curved arrows) — history for edits.
+- + (upload plus) — import ANY file into timeline: video, image, audio, .OBJ, .STL, .JSON.
+
+F. TIMELINE CLIP ACTION BAR (appears when a clip is selected)
+- Split (scissors) — cut the selected clip at the playhead.
+- Speed (gauge) — open speed drawer: .25x/.5x/1x/1.5x/2x/4x/8x + slider.
+- Reverse (back arrows) — play the clip backwards.
+- Freeze (snowflake) — hold the current frame for 2 seconds.
+- Duplicate (two squares) — copy the clip onto a new row.
+- Copy / Paste (two sheets / clipboard) — copy clip settings and paste.
+- Opacity (half circle) — fade the clip layer.
+- Replace (swap arrows) — swap the clip&#x27;s media.
+- Delete (trash, danger color) — remove the clip.
+- Save (disk) — save this clip setup into the project.
+- Camera Track (target on camera) — bind camera motion to the clip.
+- View Cam (eye in camera) — jump to that camera view.
+
+G. BOTTOM TABS + CROSSOVER PILLS
+- Add (plus box) — Add tab: primitives, imports, assets.
+- Edit (wireframe cube) — Edit tab: mesh operations.
+- Sculpt (brush stroke) — Sculpt tab: brushes.
+- Rig (two bones joined) — Rig tab: skeleton and weights.
+- Animate (diamond play) — Animate tab: keys and drivers.
+- Look (half shaded circle) — Look tab: material/texture/light/camera/render.
+- Agent (sparkle) — Agent tab: full-screen AI studio (default screen).
+- Crossover pills inside Add panel: Primitives, Edit Tools, Rig Bones, Sculpt, Materials, All-in-One — switch the tool strip without leaving the panel.
+
+H. ADD TAB — 42 CREATION ICONS (all create a real object at click)
+- cube Cube; sphere UV Sphere; icosphere Ico Sphere; cylinder Cylinder; cone Cone; torus Torus; plane Plane; circle Circle; grid Grid; pyramid Pyramid; tube Tube; capsule Capsule.
+- curve_bezier Bezier Curve; curve_circle Bezier Circle; curve_path Path; curve_nurbs NURBS Curve.
+- light Point Light; light_sun Sun Light; light_spot Spot Light; light_area Area Light.
+- camera Perspective; camera_ortho Orthographic.
+- empty_axes Plain Axes; empty_arrows Arrows; empty_cube Cube Empty; empty_sphere Sphere Empty; empty_circle Circle Empty; empty_image Image Empty.
+- text_3d 3D Text.
+- import_device Device Model; import_photo Reference Image; asset_suzanne Suzanne Monkey; asset_tree Stylized Tree; asset_car Stylized Car; asset_character Character; asset_chair Modern Chair.
+- bone Armature Bone; metaball Metaball; lattice Lattice Cage; forcefield Force Field; speaker Audio Speaker; coin Coin Plate.
+- Each has live creation sliders (radius, segments, subdivisions, size, intensity, fov, text value...). Adding auto-selects Move tool; cameras auto-wire to PiP.
+
+I. EDIT TAB
+- Move / Rotate / Scale — same gizmos as rail, for the selected mesh.
+- Extrude — push selected faces outward to make new geometry.
+- Inset — shrink selected faces inward.
+- Bevel — round selected edges.
+- Loop Cut — add an edge loop across the mesh.
+- Knife Cut — draw a line across the mesh to slice it.
+- Merge Center / Merge First / Merge Last / Collapse (Dissolve) — vertex merge options.
+- Subdivide — split faces into more faces.
+- Mirror X / Y / Z — symmetry across an axis.
+- Solidify — give a flat surface thickness.
+- Array — repeat the object in a pattern.
+- Boolean Diff / Boolean Union — subtract or combine two meshes.
+- Smooth — relax mesh shading.
+- Origin to Geometry / to 3D Cursor / to Center — move the object&#x27;s pivot.
+- Apply Location / Rotation / Scale — bake transforms into the mesh.
+
+J. SCULPT TAB
+- 12 brushes: Draw, Clay Strips, Smooth, Inflate, Grab, Snake Hook, Pinch, Crease, Flatten, Fill, Mask, Simplify.
+- Invert (Add/Subtract), Smooth (Hold), Voxel Simplify, Relax Mesh, quick-smooth.
+- Size / Strength / Hardness sliders; falloff Smooth / Linear / Hard; symmetry X / Y / Z.
+
+K. RIG TAB
+- Edit Bones / Pose Mode / Weight Paint — the three rig modes.
+- X-Ray, Names, Multi-Sel — bone visibility and selection options.
+- Bone layers: All / L1:Core / L2:Limb / L3:IK; Move Layer; toggle bone hide.
+- Add Bone, Biped Rig, 3-Bone Chain, Demo Char+Rig, Extrude Bone, Subdivide, Duplicate Bone, Delete Bone.
+- Move / Rotate / Scale Bone; Parent (Connected), Parent (Offset), Toggle Connect, Clear Parent.
+- Flip Direction, Recalc Roll, Symmetrize .L→.R, Name L/R, Automatic Weights.
+- IK Constraint (target select, New Target, chain 1–6, influence), Remove IK.
+- Constraints drawer: +Copy Rot, +Copy Loc, +Limit Rot, +Limit Loc, +Child Of, +Damped Track.
+- Pose Library: rest, T-Pose, Wave Hi, Walk Stride, Action Jump, Save Pose.
+- Reset Pose (All), Clear Rot / Loc / Scale.
+- Weight Paint: Add, Subtract, Blur Smooth, Lighten, Darken, Normalize, Mirror X, Flood Fill, radius/strength, blue→red heatmap.
+
+L. ANIMATE TAB
+- Auto-Key (record icon) — automatically insert keys while transforming.
+- Loop — repeat playback.
+- Prev Key / Next Key — jump between keyframes.
+- Snap — snap keys to frames.
+- Graph Curves — open F-curve editor (Red X, Green Y, Blue Z; click to scrub).
+- Onion Skin — ghost previous/next frames (ghosts/step/alpha).
+- Key Armature — key all bones at once.
+- Copy Pose / Paste Flipped (.L↔.R) — mirror poses between sides.
+- Auto Walk Cycle — generate a walk loop.
+- Bake Physics — convert physics simulation into keyframes.
+- Driver: Spin / Driver: Bounce — procedural animation drivers.
+- Interpolation Linear / Bezier / Step; FPS selector; End frame; track filter.
+
+M. LOOK TAB
+- Sub-nav icons: Material, Texture, Lighting, Camera, Render.
+- Material: New Mat, Assign, base color, metal, rough, spec, emission, alpha, normal strength, preset swatches (also applies to selected faces), live preview sphere.
+- Texture: Upload Image, Clear Texture; procedural Checker, Noise, Gradient, Brick, Wood, Marble, Carbon; channels Base Color / Roughness / Metallic / Normal / Emission; UV scale, location, rotation, influence; HDRI select.
+- Lighting: Point, Sun, Spot, Area; light color/power/radius/angle; Cast Shadows; world background, ambient, env strength.
+- Camera: Add Camera, Camera View, Cam to View, Lock to View, Persp/Ortho, focal 15–135mm, clip start/end, roll, Depth of Field, focus distance, aperture.
+- Render: Shading Solid, Material Preview, Rendered, Wireframe, Grid, Axes; X-Ray; 3D Cursor; FX Shadows, Ambient Occlusion, Bloom/Glow, Anti-Aliasing.
+- Export row: Record Video, Render PNG, Export OBJ, Save Project; resolution 1920x1080 / 1080x1920 / 1080x1080 / 3840x2160; video 480p/720p/1080p.
+
+N. AGENT STUDIO (default screen)
+- Hamburger — open the 11-item feature menu: Projects Hub, Toggle 3D Split View, Open Full 3D Editor, API Providers &amp; MCP, Spin the Cube, Bouncing Ball Loop, Low-Poly 3D Tree, Build Robot &amp; Coins, Auto-Rig Armature, Download Project (.json), Clear 3D Scene.
+- New Chat (+) — clear the conversation.
+- Animation / 3D Asset pill — choose output type.
+- Split View toggle — show/hide the 3D preview above the chat.
+- + attachment — attach any file; forwarded into timeline import.
+- / (slash) — open MCP &amp; Skills palette: /anim-director, /rig-mcp, /asset-architect, /toon-shader, Configure All.
+- Settings (gear) — tabs API Providers (12), MCP (5), Skills (6); add/edit keys and custom entries; saved in localStorage.
+- Send (green paper plane) — submit prompt; Enter sends, Shift+Enter newline.
+
+O. OUTLINER (#ob, right side)
+- Object row — click to select.
+- Pencil — rename the object.
+- Eye / Eye-off — toggle visibility.
+- Lock — prevent editing.
+- Trash — delete the object.
+
+P. SAVE / OPEN / NEW DIALOG
+- Save: project name field, object/keyframe counts, &quot;Download .tsf.json&quot;, &quot;Save in browser&quot;.
+- Open: list of browser-saved projects with dates.
+- New: confirm, then clear scene and keyframes.
+- Close (X) — dismiss dialog. Autosave restores the last session on reload.
+
+Q. STUDIO HOME / LANDING
+- Create project — empty new scene.
+- Import — universal file picker.
+- Example cards: Cozy House, Toy Car, City Block, Around the World — each spawns a real assembled multi-object scene; the last has globe/satellite keys and auto-plays.
+- Saved in Browser + &quot;Save current scene&quot; — local project list.
+
+R. GAME MODE (Animate -&gt; Game)
+- D-pad (up/left/down/right) and arrows/WASD — move selected object.
+- JUMP button / Space — jump (WebAudio 440 Hz beep).
+- Coin pickup — 10 points + 880 Hz beep; score shown in #sc.
+- resetScore / resetGameInput — clear score and held keys.
+
+S. QUICK KEY MAP (also in section 12)
+V select, G move, R rotate, S scale, F frame selection, Shift+F frame all, Space play/pause/jump, I or K add key, Ctrl+Z undo, Ctrl+Y redo, Ctrl+D duplicate, Ctrl+S save, Delete remove, arrows/WASD game move, Enter send in Agent, &quot;/&quot; slash palette.
+</textarea>
+<p>Jab Chrome clipboard permission pooche, allow kar dena. Agar copy na ho to neeche text pe long-press karke "Select all" -> Copy.</p>
+<script>
+function msg(x){document.getElementById('s').textContent=x}
+function fallback(){var t=document.getElementById('t');t.focus();t.select();t.setSelectionRange(0,t.value.length);
+try{document.execCommand('copy');msg('Copied!')}catch(e){msg('Long-press text -> Select all -> Copy')}}
+function doCopy(){var v=document.getElementById('t').value;
+if(navigator.clipboard&&window.isSecureContext){navigator.clipboard.writeText(v).then(function(){msg('Copied!')},fallback)}else fallback()}
+</script>
+</body></html>

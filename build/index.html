@@ -12,7 +12,7 @@
 <link rel="manifest" href="./manifest.webmanifest" />
 <link rel="preload" href="./fonts/inter.woff2" as="font" type="font/woff2" crossorigin />
 <link rel="preload" href="./fonts/sora.woff2" as="font" type="font/woff2" crossorigin />
-<link rel="stylesheet" href="./studio-pro-styles.css?v=2gb-20261105">
+<link rel="stylesheet" href="./studio-pro-styles.css?v=2gb-20261121-arrow21">
 </head>
 <body class="agent-tab-open">
 <div id="app" class="app-root">
@@ -26,23 +26,23 @@
 			<div id="cam-hud-badge" class="cam-hud-badge" data-testid="cam-hud-badge">Camera Active · 50mm</div>
 		</div>
 		<div class="view-presets" data-testid="view-presets">
-			<button type="button" data-cam-preset="camera" id="btn-cam-view" title="View Through Active Camera">Cam</button>
-			<button type="button" data-cam-preset="front" title="Front View">Front</button>
-			<button type="button" data-cam-preset="right" title="Right View">Right</button>
-			<button type="button" data-cam-preset="left" title="Left View">Left</button>
-			<button type="button" data-cam-preset="top" title="Top / Up View">Up</button>
-			<button type="button" data-cam-preset="bottom" title="Bottom / Down View">Down</button>
-			<button type="button" data-cam-preset="iso" title="3D Perspective View">3D</button>
+			<button type="button" data-cam-preset="camera" id="btn-cam-view" title="View Through Active Camera" aria-label="View through active camera"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M23 7l-7 5 7 5V7z"/><rect x="1" y="5" width="15" height="14" rx="2"/></svg></button>
+			<button type="button" data-cam-preset="front" title="Front View" aria-label="Front view"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="4" y="4" width="16" height="16" rx="2"/><circle cx="12" cy="12" r="3"/></svg></button>
+			<button type="button" data-cam-preset="right" title="Right View" aria-label="Right view"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M4 12h16"/><path d="M14 6l6 6-6 6"/></svg></button>
+			<button type="button" data-cam-preset="left" title="Left View" aria-label="Left view"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M20 12H4"/><path d="M10 6l-6 6 6 6"/></svg></button>
+			<button type="button" data-cam-preset="top" title="Top / Up View" aria-label="Top view"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 20V4"/><path d="M6 10l6-6 6 6"/></svg></button>
+			<button type="button" data-cam-preset="bottom" title="Bottom / Down View" aria-label="Bottom view"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 4v16"/><path d="M6 14l6 6 6-6"/></svg></button>
+			<button type="button" data-cam-preset="iso" title="3D Perspective View" aria-label="3D perspective view"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2l9 5-9 5-9-5 9-5z"/><path d="M3 7v10l9 5 9-5V7"/><path d="M12 12v10"/></svg></button>
 		</div>
-		<div id="viewport-hints" class="viewport-hints" data-testid="viewport-hints">Drag to orbit · tap to select</div>
+		<div id="viewport-hints" class="viewport-hints" data-testid="viewport-hints" style="display:none;" aria-hidden="true">Drag to orbit · tap to select</div>
 		<button type="button" id="viewport-snap" class="snap-toggle" data-testid="viewport-snap" title="Toggle Grid Snap">⊞</button>
-		<div id="viewport-stats" class="stats-hud" data-testid="viewport-stats"><span>60 fps</span><span>12 tris</span><span>1 objs</span><span class="engine">wasm</span></div>
+		<div id="viewport-stats" class="stats-hud" data-testid="viewport-stats" style="display:none;" aria-hidden="true"><span>60 fps</span><span>12 tris</span><span>1 objs</span><span class="engine">wasm</span></div>
 		<div id="element-mode" class="element-mode" data-testid="element-mode">
 			<button type="button" data-elem-mode="vertex" class="on">Vertex</button>
 			<button type="button" data-elem-mode="edge">Edge</button>
 			<button type="button" data-elem-mode="face">Face</button>
 		</div>
-		<div id="pip" data-testid="pip-preview" title="Mini PiP Preview (Left-Side Compact)"><div class="pip-frame"><canvas id="pip-canvas"></canvas><span class="pip-badge">PiP</span></div></div>
+		<div id="pip" data-testid="pip-preview" title="Mini PiP Preview"><div class="pip-head"><span class="pip-badge">PIP</span><span id="pip-pct" class="pip-pct" data-testid="pip-pct">100%</span><div id="pip-zoom" class="pip-zoom" data-testid="pip-zoom"><button type="button" id="pip-plus" class="pip-zbtn pip-plus" title="Zoom in" aria-label="Zoom in">+</button><button type="button" id="pip-minus" class="pip-zbtn pip-minus" title="Zoom out" aria-label="Zoom out">−</button></div><button type="button" id="pip-arrow" class="pip-arrow" data-testid="pip-arrow" title="Hide / Show PiP preview" aria-label="Hide or show PiP preview" aria-expanded="true"><svg width="5" height="8" viewBox="0 0 6 10" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><polyline points="4.5 1 1.5 5 4.5 9"/></svg></button></div><div class="pip-frame"><canvas id="pip-canvas"></canvas></div></div>
 		<div id="pad" style="display:none;position:fixed;left:14px;bottom:110px;z-index:12;grid-template-columns:repeat(3,40px);gap:4px;">
 			<span></span><button type="button" class="b" data-gdir="up"><svg width="12" height="12" viewBox="0 0 24 24" fill="currentColor"><polygon points="12 4 4 20 20 20"/></svg></button><span></span>
 			<button type="button" class="b" data-gdir="left"><svg width="12" height="12" viewBox="0 0 24 24" fill="currentColor"><polygon points="4 12 20 4 20 20"/></svg></button><button type="button" class="b" data-gdir="down"><svg width="12" height="12" viewBox="0 0 24 24" fill="currentColor"><polygon points="12 20 4 4 20 4"/></svg></button><button type="button" class="b" data-gdir="right"><svg width="12" height="12" viewBox="0 0 24 24" fill="currentColor"><polygon points="20 12 4 4 4 20"/></svg></button>
@@ -412,6 +412,8 @@
 
 	<div id="msg" style="display:none;" role="alert"></div>
 </div>
-<script src="./studio-pro-bundle.js?v=2gb-20261105"></script>
+<script src="./studio-pro-bundle.js?v=2gb-20261121-back1"></script>
+<script src="./studio-pro-overrides.js?v=2gb-20261121-arrow21"></script>
+<script src="./sw-register.js?v=2gb-20261121-pwa1"></script>
 </body>
 </html>

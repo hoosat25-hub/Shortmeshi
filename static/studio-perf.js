@@ -103,17 +103,38 @@
   };
   window.cancelAnimationFrame = function (id) { return realCAF(id); };
 
-  claim(true);                              // newest tab takes over
-  if (!leader) pause();
+  function isVisible() {
+    return document.visibilityState !== 'hidden' && !document.hidden;
+  }
+  function syncVisibility() {
+    // The tab the user is actually looking at ALWAYS runs. A background tab
+    // may sleep, but a visible tab must never be paused (that caused blank UI).
+    if (isVisible()) {
+      if (!leader) claim(true);
+      resume();
+    } else {
+      pause();
+    }
+  }
 
-  // Heartbeat: keep leadership if we own it; take over if the leader died.
+  claim(isVisible());
+  syncVisibility();
+  document.addEventListener('visibilitychange', syncVisibility);
+  // Any real tap on a paused tab immediately wakes it.
+  document.addEventListener('pointerdown', function () {
+    if (paused) { claim(true); resume(); }
+  }, true);
+
+  // Heartbeat: visible tab keeps leadership; hidden tab can take over if the
+  // previous leader died, but only after it becomes visible again.
   setInterval(function () {
+    if (!isVisible()) { pause(); return; }
     var cur = readLeader();
-    if (leader) {
-      if (!cur || cur.id !== myId) claim(true);
-      else writeLeader(cur.gen || 1);
-    } else if (!cur || Date.now() - cur.ts > 2500) {
-      if (claim(true)) resume();
+    if (!leader || !cur || cur.id !== myId) {
+      claim(true);
+      resume();
+    } else {
+      writeLeader(cur.gen || 1);
     }
   }, 700);
 
@@ -147,7 +168,7 @@
       return { leader: leader, paused: paused, lowEnd: lowEnd, lite: lite,
                minFrame: minFrame, leaderInfo: readLeader() };
     },
-    version: 'perf-1'
+    version: 'perf-2'
   };
   console.log('[perf] ready —', lite ? 'lite mode, 30fps cap' : 'full mode',
               leader ? 'leader' : 'follower (paused)');
